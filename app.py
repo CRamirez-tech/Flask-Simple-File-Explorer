@@ -2,6 +2,8 @@ import os
 from flask import Flask, render_template, request, redirect, send_from_directory, url_for
 from datetime import datetime
 
+port = int(os.environ.get('PORT', 5000))
+
 app = Flask(__name__)
 BASE_DIR = os.path.abspath("drive")  # Carpeta raíz para archivos
 
@@ -50,4 +52,4 @@ def delete():
 
 if __name__ == '__main__':
     os.makedirs(BASE_DIR, exist_ok=True)
-    app.run(debug=True)
+    app.run(debug=True, port=port)
