@@ -32,6 +32,19 @@ def index(req_path):
 
     return render_template('index.html', files=file_list, current_path=req_path)
 
+@app.route('/create_folder', methods=['POST'])
+def create_folder():
+    current_path = request.form.get("path", "")
+    folder_name = request.form.get("folder_name", "").strip()
+
+    if not folder_name:
+        return "Nombre de carpeta vacío", 400
+
+    new_folder_path = os.path.join(BASE_DIR, current_path, folder_name)
+    os.makedirs(new_folder_path, exist_ok=True)
+
+    return redirect(url_for('index', req_path=current_path))
+
 @app.route('/upload', methods=['POST'])
 def upload():
     current_path = request.form.get("path", "")
