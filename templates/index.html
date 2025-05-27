@@ -12,34 +12,34 @@
   <style>
     .card-icon {
       font-size: 40px;
-  }
+    }
 
-  .card-name {
+    .card-name {
       font-weight: 500;
       word-break: break-word;
-  }
+    }
 
-  a {
+    a {
       text-decoration: none;
       color: inherit;
-  }
+    }
 
-  a:hover {
+    a:hover {
       color: #0d6efd;
-  }
+    }
 
-  .clickable {
+    .clickable {
       cursor: pointer;
       transition: all 0.2s ease-in-out;
-  }
+    }
 
-  .clickable:hover {
+    .clickable:hover {
       background-color: #f1f3f5;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
       transform: translateY(-2px);
-  }
+    }
 
-  .floating-buttons {
+    .floating-buttons {
       position: fixed;
       bottom: 30px;
       right: 30px;
@@ -48,74 +48,108 @@
       flex-direction: row-reverse;
       gap: 10px;
       flex-wrap: wrap;
-  }
+    }
 
-  @media (max-width: 576px) {
+    @media (max-width: 576px) {
       .floating-buttons {
         right: 15px;
         bottom: 15px;
         flex-direction: column;
         align-items: flex-end;
+      }
     }
-}
-</style>
+    #drop-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(13, 110, 253, 0.2); /* azul con opacidad */
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 2000;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+
+    #drop-overlay.active {
+      display: flex;
+      pointer-events: auto;
+    }
+
+    .drop-message {
+      background-color: white;
+      border: 2px dashed #0d6efd;
+      padding: 40px;
+      border-radius: 12px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.2);
+    }
+
+  </style>
 </head>
 <body class="bg-light">
+  <!-- Overlay Drag & Drop -->
+  <div id="drop-overlay">
+    <div class="drop-message text-center">
+      <i class="fas fa-cloud-upload-alt fa-3x mb-3"></i>
+      <p class="lead">Suelta el archivo aquí para subirlo</p>
+    </div>
+  </div>
+  <div class="container py-4">
+    <h2 class="mb-4">📁 Mi Drive</h2>
 
-    <div class="container py-4">
-      <h2 class="mb-4">📁 Mi Drive</h2>
+    {% if current_path %}
+    {% set parent_path = current_path.rsplit('/', 1)[0] if '/' in current_path else '' %}
+    <a href="{{ url_for('index', req_path=parent_path) }}" class="btn btn-outline-secondary mb-4">
+      <i class="fas fa-arrow-left"></i> Volver
+    </a>
+    {% endif %}
 
-      {% if current_path %}
-      {% set parent_path = current_path.rsplit('/', 1)[0] if '/' in current_path else '' %}
-      <a href="{{ url_for('index', req_path=parent_path) }}" class="btn btn-outline-secondary mb-4">
-          <i class="fas fa-arrow-left"></i> Volver
-      </a>
-      {% endif %}
-
-      <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4">
-        {% for file in files %}
-        <div class="col">
-          <div class="card h-100 shadow-sm clickable">
-            <div class="card-body d-flex flex-column justify-content-between">
-              <div class="text-center mb-3" onclick="window.location='{{ url_for('index', req_path=file.path|replace('\\', '/') ) }}'">
-                <div class="card-icon mb-2">
-                  {% if file.is_dir %}
-                  <i class="fas fa-folder fa-2x text-warning"></i>
-                  {% else %}
-                  <i class="fas fa-file-alt fa-2x text-secondary"></i>
-                  {% endif %}
+    <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4">
+      {% for file in files %}
+      <div class="col">
+        <div class="card h-100 shadow-sm clickable">
+          <div class="card-body d-flex flex-column justify-content-between">
+            <div class="text-center mb-3" onclick="window.location='{{ url_for('index', req_path=file.path|replace('\\', '/') ) }}'">
+              <div class="card-icon mb-2">
+                {% if file.is_dir %}
+                <i class="fas fa-folder fa-2x text-warning"></i>
+                {% else %}
+                <i class="fas fa-file-alt fa-2x text-secondary"></i>
+                {% endif %}
               </div>
               <div class="card-name">{{ file.name }}</div>
               <small class="text-muted d-block">
-                  {% if file.is_dir %}
-                  Carpeta
-                  {% else %}
-                  {{ '%.2f' | format(file.size / 1024 / 1024) }} MB
-                  {% endif %}
+                {% if file.is_dir %}
+                Carpeta
+                {% else %}
+                {{ '%.2f' | format(file.size / 1024 / 1024) }} MB
+                {% endif %}
               </small>
               <small class="text-muted">
-                  {{ file.modified.strftime('%Y-%m-%d %H:%M') if file.modified }}
+                {{ file.modified.strftime('%Y-%m-%d %H:%M') if file.modified }}
               </small>
+            </div>
+            <div class="d-flex justify-content-between align-items-center mt-auto">
+              {% if not file.is_dir %}
+              <a href="{{ url_for('index', req_path=file.path|replace('\\', '/') ) }}" download class="btn btn-sm btn-outline-primary">
+                <i class="fas fa-download"></i>
+              </a>
+              {% endif %}
+              <form action="{{ url_for('delete') }}" method="POST" data-filename="{{ file.name }}">
+                <input type="hidden" name="file" value="{{ file.path|replace('\\', '/') }}">
+                <button type="submit" class="btn btn-sm btn-outline-danger" title="Eliminar">
+                  <i class="fas fa-trash-alt"></i>
+                </button>
+              </form>
+            </div>
           </div>
-          <div class="d-flex justify-content-between align-items-center mt-auto">
-            {% if not file.is_dir %}
-            <a href="{{ url_for('index', req_path=file.path|replace('\\', '/') ) }}" download class="btn btn-sm btn-outline-primary">
-              <i class="fas fa-download"></i>
-          </a>
-          {% endif %}
-          <form action="{{ url_for('delete') }}" method="POST" data-filename="{{ file.name }}">
-              <input type="hidden" name="file" value="{{ file.path|replace('\\', '/') }}">
-              <button type="submit" class="btn btn-sm btn-outline-danger" title="Eliminar">
-                <i class="fas fa-trash-alt"></i>
-            </button>
-        </form>
+        </div>
+      </div>
+      {% endfor %}
     </div>
-</div>
-</div>
-</div>
-{% endfor %}
-</div>
-</div>
+  </div>
 
 <!-- Botones flotantes -->
 <div class="floating-buttons">
@@ -125,12 +159,12 @@
     <input type="file" id="fileInput" name="file" class="d-none" onchange="this.form.submit()">
     <button type="button" class="btn btn-primary" onclick="document.getElementById('fileInput').click()">
       <i class="fas fa-upload me-1"></i> Subir
-  </button>
-</form>
+    </button>
+  </form>
 
 <!-- Botón crear carpeta -->
 <button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#createFolderModal">
-    <i class="fas fa-folder-plus me-1"></i> Carpeta
+  <i class="fas fa-folder-plus me-1"></i> Carpeta
 </button>
 </div>
 
@@ -143,23 +177,77 @@
         <div class="modal-header">
           <h5 class="modal-title" id="createFolderModalLabel">Crear nueva carpeta</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
-      </div>
-      <div class="modal-body">
+        </div>
+        <div class="modal-body">
           <div class="mb-3">
             <label for="folderNameInput" class="form-label">Nombre de la carpeta</label>
             <input type="text" class="form-control" id="folderNameInput" name="folder_name" required>
+          </div>
         </div>
-    </div>
-    <div class="modal-footer">
-      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-      <button type="submit" class="btn btn-primary">Crear</button>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Crear</button>
+        </div>
+      </div>
+    </form>
   </div>
-</div>
-</form>
-</div>
 </div>
 
 <!-- JS -->
+<script>
+  const overlay = document.getElementById('drop-overlay');
+
+  let dragCounter = 0;
+
+  window.addEventListener('dragenter', (e) => {
+    if (e.dataTransfer && e.dataTransfer.types.includes('Files')) {
+      dragCounter++;
+      overlay.classList.add('active');
+    }
+  });
+
+  window.addEventListener('dragleave', (e) => {
+    dragCounter--;
+    if (dragCounter <= 0) {
+      overlay.classList.remove('active');
+    }
+  });
+
+  window.addEventListener('dragover', (e) => {
+    e.preventDefault();
+  });
+
+  window.addEventListener('drop', async (e) => {
+    e.preventDefault();
+    dragCounter = 0;
+    overlay.classList.remove('active');
+
+    const files = e.dataTransfer.files;
+    if (!files.length) return;
+
+    const formData = new FormData();
+    formData.append('path', "{{ current_path }}");
+    for (const file of files) {
+      formData.append('file', file);
+    }
+
+    try {
+      const response = await fetch("{{ url_for('upload') }}", {
+        method: "POST",
+        body: formData
+      });
+
+      if (response.ok) {
+        location.reload();
+      } else {
+        alert("Error al subir archivo.");
+      }
+    } catch (err) {
+      alert("Fallo en la subida: " + err.message);
+    }
+  });
+</script>
+
 <script>
   document.querySelectorAll("form").forEach(form => {
     if (form.action.includes("/delete")) {
@@ -167,9 +255,9 @@
         const fileName = form.dataset.filename || "este archivo";
         const confirmed = confirm(`¿Estás seguro de que deseas eliminar "${fileName}"?`);
         if (!confirmed) event.preventDefault();
-    });
-  }
-});
+      });
+    }
+  });
 </script>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/js/bootstrap.bundle.min.js"></script>
