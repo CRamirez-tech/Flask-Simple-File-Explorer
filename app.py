@@ -1,6 +1,7 @@
 import os
 from flask import Flask, render_template, request, redirect, send_from_directory, url_for
 from datetime import datetime
+from socket import gethostname
 
 port = int(os.environ.get('PORT', 10000))
 
@@ -63,6 +64,8 @@ def delete():
             os.remove(file_path)
     return redirect(url_for('index', req_path=os.path.dirname(request.form['file'])))
 
+os.makedirs(BASE_DIR, exist_ok=True)
 if __name__ == '__main__':
-    os.makedirs(BASE_DIR, exist_ok=True)
-    app.run(host='0.0.0.0', debug=True, port=port)
+    if 'liveconsole' not in gethostname():
+        app.run(host='0.0.0.0', debug=True, port=port)
+
